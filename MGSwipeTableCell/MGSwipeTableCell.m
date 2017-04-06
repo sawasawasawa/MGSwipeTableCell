@@ -567,6 +567,8 @@ static inline CGFloat mgEaseInOutBounce(CGFloat t, CGFloat b, CGFloat c) {
     void (^_animationCompletion)(BOOL finished);
     CADisplayLink * _displayLink;
     MGSwipeState _firstSwipeState;
+    
+    bool _revertReorderControlAfterSwipe;
 }
 
 #pragma mark View creation & layout
@@ -623,6 +625,7 @@ static inline CGFloat mgEaseInOutBounce(CGFloat t, CGFloat b, CGFloat c) {
     _preservesSelectionStatus = NO;
     _allowsOppositeSwipe = YES;
     _firstSwipeState = MGSwipeStateNone;
+    _swipeEnabledWhileEditing = NO;
     
 }
 
@@ -1147,6 +1150,9 @@ static inline CGFloat mgEaseInOutBounce(CGFloat t, CGFloat b, CGFloat c) {
     }
     if (offset !=0) {
         [self createSwipeViewIfNeeded];
+    } else if (_revertReorderControlAfterSwipe) {
+        self.showsReorderControl = YES;
+        _revertReorderControlAfterSwipe = NO;
     }
     
     if (!animation) {
@@ -1294,7 +1300,7 @@ static inline CGFloat mgEaseInOutBounce(CGFloat t, CGFloat b, CGFloat c) {
     
     if (gestureRecognizer == _panRecognizer) {
         
-        if (self.isEditing) {
+        if (self.isEditing && !self.swipeEnabledWhileEditing) {
             return NO; //do not swipe while editing table
         }
         
@@ -1310,6 +1316,10 @@ static inline CGFloat mgEaseInOutBounce(CGFloat t, CGFloat b, CGFloat c) {
         }
         
         if (_swipeOffset != 0.0) {
+            if (self.isEditing && self.showsReorderControl) {
+                self.showsReorderControl = NO;
+                _revertReorderControlAfterSwipe = YES;
+            }
             return YES; //already swiped, don't need to check buttons or canSwipe delegate
         }
         
@@ -1332,7 +1342,14 @@ static inline CGFloat mgEaseInOutBounce(CGFloat t, CGFloat b, CGFloat c) {
             _allowSwipeRightToLeft = _rightButtons.count > 0;
         }
         
-        return (_allowSwipeLeftToRight && translation.x > 0) || (_allowSwipeRightToLeft && translation.x < 0);
+        bool result = (_allowSwipeLeftToRight && translation.x > 0) || (_allowSwipeRightToLeft && translation.x < 0);
+        
+        if (result && self.isEditing && self.showsReorderControl) {
+            self.showsReorderControl = NO;
+            _revertReorderControlAfterSwipe = YES;
+        }
+        
+        return result;
     }
     else if (gestureRecognizer == _tapRecognizer) {
         CGPoint point = [_tapRecognizer locationInView:_swipeView];

@@ -253,6 +253,8 @@ typedef NS_ENUM(NSInteger, MGSwipeEasingFunction) {
 /** Property to read or change the current swipe offset programmatically */
 @property (nonatomic, assign) CGFloat swipeOffset;
 
+@property (nonatomic, assign) bool swipeEnabledWhileEditing;
+
 /** Utility methods to show or hide swipe buttons programmatically */
 -(void) hideSwipeAnimated: (BOOL) animated;
 -(void) hideSwipeAnimated: (BOOL) animated completion:(nullable void(^)(BOOL finished)) completion;
